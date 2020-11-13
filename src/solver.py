@@ -13,7 +13,10 @@ class Solver(solver_based.SolverBased):
                                是一个PuLP的约束变量，添加到模型中的约束应由变量和运算构成
         @param model 表示传进来的PuLP模型，添加的约束直接在模型上进行添加即可
         """
-        pass
+        z=0 # z为模拟的目标函数
+        model += z
+        solved_prob = model.solve()
+        return solved_prob
 
     def reduct_graph(self, solved_prob):
         parameter_lists = self.convert_variabl2array(solved_prob)
