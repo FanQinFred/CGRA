@@ -86,6 +86,7 @@ class Solver(solver_based.SolverBased):
             for j in range(raw_num):
                 if(resolved_xyz[j][i]==1): 
                     a=j
+            #存在问题
             b=time_steps[i][1] #i列对应的节点的最晚时间步
             if(b>=a):
                 pass
