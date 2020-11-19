@@ -63,6 +63,8 @@ class Solver(solver_based.SolverBased):
                   格式如：((x1, y1), (x2, y2), (x3, y3), ...)，
                   其中(x1, y1)表示有一条从x1出发指向y1的边
     """
+    def pre_print_answer_table(self, resolved_xyz,time_steps,relies):
+        self.print_answer_table(resolved_xyz['X'],time_steps,relies)
     def print_answer_table(self, resolved_xyz,time_steps,relies):
         #保留原始的resolved_xyz
         old_resolved_xyz=[]
