@@ -24,8 +24,8 @@ class Solver(solver_based.SolverBased):
     @author: QinFan@cqu.edu.cn
     """    
     def reduct_graph(self, solved_prob):
-        parameter_lists = self.convert_variabl2array(solved_prob)
-        return parameter_lists
+        parameter_solved_lists = self.convert_variabl2array(solved_prob)
+        return parameter_solved_lists
     """
     @param col_number 传入节点所在的列号
     @param X 返转后且重新编号后的调度表格 
