@@ -49,6 +49,47 @@ class Graph:
         self.adjacency_list[from_point_id] = self.number_of_edges  # 将当前边的前一条边加入
         self.number_of_edges += 1
 
+    def generate_relies(self):
+        """
+            返回所有边所表示的依赖关系
+        """
+        res = []
+        for i in range(1, len(self.edges)):
+            res.append((self.edges[i].from_point_id, self.edges[i].to_point_id))
+        return res
+
+    def generate_routing_points_description(self):
+        """
+            生成所有机动点的信息
+        """
+        res = []
+        for i in self.nodes:
+            node = self.nodes[i]
+            if node.earliest_time_step != node.latest_routing_time_step and node.latest_routing_time_step != 0:  # 如果最早和最晚路由事件步不同，那么是一个机动点
+                res.append((i, node.earliest_time_step, node.latest_time_step, node.latest_routing_time_step))
+        return res
+
+    def generate_static_points_description(self):
+        """
+            返回所有静态点的时间节点
+        """
+        res = []
+        for i in self.nodes:
+            node = self.nodes[i]
+            if node.earliest_time_step == node.latest_routing_time_step or node.latest_routing_time_step == 0:  # 如果最早和最晚路由事件步不同，那么是一个机动点
+                res.append((i, node.earliest_time_step))
+        return res
+
+    def generate_all_points_description(self):
+        """
+            生成所有点的信息
+        """
+        res = []
+        for i in self.nodes:
+            node = self.nodes[i]
+            res.append((i, node.earliest_time_step, node.latest_time_step, node.latest_routing_time_step))
+        return res
+
     def __str__(self):
         return_string = ""
         for node in self.nodes:

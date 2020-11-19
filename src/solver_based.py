@@ -1,5 +1,7 @@
 from src.graph import Graph
+from src.generate_constraints import generate_constraints
 import pulp
+import math
 
 
 class SolverBased:
@@ -31,15 +33,16 @@ class SolverBased:
             "z": res_z_variable_array,
         }
 
-        for variable in prob.variables():
-            ref, node_id, turn_id = variable.name.split(",")
-            node_id, turn_id = int(node_id), int(turn_id)
-            write_goal[ref][node_id][turn_id] = variable.varValue
+        for variable in solved_prob.variables():
+            if variable.name != "__dummy":
+                ref, node_id, turn_id = variable.name.split(",")
+                node_id, turn_id = int(node_id), int(turn_id)
+                write_goal[ref][node_id][turn_id] = math.floor(variable.varValue + 0.5)
 
         return {
-            "x_variable_array": res_x_variable_array,
-            "y_variable_array": res_y_variable_array,
-            "z_variable_array": res_z_variable_array,
+            "X": res_x_variable_array,
+            "Y": res_y_variable_array,
+            "Z": res_z_variable_array,
         }
 
     def read_file(self, file_name):
@@ -106,23 +109,75 @@ class SolverBased:
         z_variable_array: 表示向内存读取
         @author: wangsaiyu@cqu.edu.cn
         """
-        self.model = pulp.LpProblem()  # 新建问题
+        self.model = pulp.LpProblem("prob", pulp.LpMinimize)  # 新建问题
         self.x_variable_array, self.y_variable_array, self.z_variable_array = [], [], []
         for point in range(self.N):
             new_x_line, new_y_line, new_z_line = [], [], []
             for turn in range(self.T):
                 extend_name = "," + str(point) + "," + str(turn)
-                new_x_line.append(pulp.LpVariable("x" + extend_name, lowBound=None, upBound=None, cat='Integer'))
-                new_y_line.append(pulp.LpVariable("y" + extend_name, lowBound=None, upBound=None, cat='Integer'))
-                new_z_line.append(pulp.LpVariable("z" + extend_name, lowBound=None, upBound=None, cat='Integer'))
+                new_x_line.append(pulp.LpVariable("x" + extend_name, lowBound=0, upBound=21, cat=pulp.LpInteger))
+                new_y_line.append(pulp.LpVariable("y" + extend_name, lowBound=0, upBound=21, cat=pulp.LpInteger))
+                new_z_line.append(pulp.LpVariable("z" + extend_name, lowBound=0, upBound=21, cat=pulp.LpInteger))
             self.x_variable_array.append(new_x_line)
             self.y_variable_array.append(new_y_line)
             self.z_variable_array.append(new_z_line)
+
+    def add_aim_function(self, N, parameter_lists, model):
+        """
+            需要被重载的函数，向模型中添加目标函数
+            @param N 一共有N个点
+            @param parameter_lists: 参数列表，一个字典，{"X":[[], [], ...], "Y":[[], [], ...], "Z":[[], [], ...], }， 每个键值对代表一个表， 表中的每一个元素
+                                   是一个PuLP的约束变量，添加到模型中的约束应由变量和运算构成
+            @param model 表示传进来的PuLP模型，添加的约束直接在模型上进行添加即可
+        """
+        pass
+
+    def pre_print_answer_table(self, resolved_xyz, time_steps, relies):
+        """
+        需要被重写的函数
+        @author: wangsaiyu@cqu.edu.cn
+        @param resolved_xyz 是已经求解出值了的大表格
+        @param time_steps 每个节点的最早时间步，最晚时间步，最晚路由时间步
+        @param relies 节点间的依赖关系,
+                     格式如：((x1, y1), (x2, y2), (x3, y3), ...)，
+                     其中(x1, y1)表示有一条从x1出发指向y1的边
+        """
+        print("ERROR :: NO DUO TAI")
+        pass
+
+    def two_dim_array_reverse_interface(self, array):
+
+        new_array = [[0 for i in range(len(array))] for j in range(len(array[0]))]
+        for i in range(len(new_array)):
+            for j in range(len(new_array[0])):
+                new_array[i][j] = array[j][i]
+
+        return new_array
 
     def run(self, file_name, II=None):
         self.read_file(file_name)
         self.get_maneuver_nodes_range()
         self.init_model()
+        generate_constraints(
+            self.N, self.T,  # N, T
+            self.graph.generate_relies(),  # relies
+            {"X": self.x_variable_array, "Y": self.y_variable_array, "Z": self.z_variable_array},  # param_lists
+            self.graph.generate_routing_points_description(),
+            self.graph.generate_static_points_description(),
+            self.model,  # model
+        )
+        self.add_aim_function(
+            self.N, {"X": self.x_variable_array, "Y": self.y_variable_array, "Z": self.z_variable_array}, self.model,
+        )
+        self.model.solve()
+
+        print(pulp.LpStatus[self.model.status])
+        print(self.convert_variabl2array(self.model))
+        self.pre_print_answer_table(
+            self.convert_variabl2array(self.model),
+            self.graph.generate_all_points_description(),
+            self.graph.generate_relies()
+        )
 
 
 if __name__ == "__main__":
