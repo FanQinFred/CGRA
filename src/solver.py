@@ -1,8 +1,10 @@
 import src.solver_based as solver_based
-
-
+"""
+@author: QinFan@cqu.edu.cn
+"""
 class Solver(solver_based.SolverBased):
     """
+    @author: QinFan@cqu.edu.cn
     用于求解的类，继承于SolverBased
     """
     def add_aim_function(self, N, parameter_lists, model):
@@ -17,23 +19,35 @@ class Solver(solver_based.SolverBased):
         model += z
         solved_prob = model.solve()
         return solved_prob
-    
+
+    """
+    @author: QinFan@cqu.edu.cn
+    """    
     def reduct_graph(self, solved_prob):
         parameter_lists = self.convert_variabl2array(solved_prob)
         return parameter_lists
     """
     @param col_number 传入节点所在的列号
     @param X 返转后且重新编号后的调度表格 
-    """
+    @author: QinFan@cqu.edu.cn
+    """    
     def get_time_step(self,col_number,X):
         for i in range(len(X[col_number])):
             if(X[col_number][i]==1):
                 return i+1
-        
+    """
+    @author: QinFan@cqu.edu.cn
+    """    
     def get_node_type(self):
         pass
+    """
+    @author: QinFan@cqu.edu.cn
+    """    
     def get_son_node(self):
         pass
+    """
+    @author: QinFan@cqu.edu.cn
+    """   
     def get_first_one_raw_num(self,resolved_xyz,i):
         a=-1
         col_num=len(resolved_xyz[0])
@@ -42,6 +56,7 @@ class Solver(solver_based.SolverBased):
                     a=j
         return a
     """
+    @author: QinFan@cqu.edu.cn
     @param resolved_xyz 是已经求解出值了的大表格
     @param time_steps 每个节点的最早时间步，最晚时间步，最晚路由时间步
     @param relies 节点间的依赖关系,
