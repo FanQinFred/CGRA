@@ -3,65 +3,49 @@ import src.solver_based as solver_based
 """
 @author: QinFan@cqu.edu.cn
 """
-
-
 class Solver(solver_based.SolverBased):
     """
+    向模型中添加目标函数
+    @param N 一共有N个点
+    @param parameter_lists: 参数列表，一个字典，{"X":[[], [], ...], "Y":[[], [], ...], "Z":[[], [], ...], }， 每个键值对代表一个表， 表中的每一个元素
+                            是一个PuLP的约束变量，添加到模型中的约束应由变量和运算构成
+    @param model 表示传进来的PuLP模型，添加的约束直接在模型上进行添加即可
     @author: QinFan@cqu.edu.cn
-    用于求解的类，继承于SolverBased
     """
-
     def add_aim_function(self, N, parameter_lists, model):
-        """
-        向模型中添加目标函数
-        @param N 一共有N个点
-        @param parameter_lists: 参数列表，一个字典，{"X":[[], [], ...], "Y":[[], [], ...], "Z":[[], [], ...], }， 每个键值对代表一个表， 表中的每一个元素
-                               是一个PuLP的约束变量，添加到模型中的约束应由变量和运算构成
-        @param model 表示传进来的PuLP模型，添加的约束直接在模型上进行添加即可
-        """
         z = 0
         for i in range(self.N):
             for j in range(self.T):
                 z += - parameter_lists["X"][i][j] + parameter_lists["Y"][i][j] + parameter_lists["Z"][i][j]
         model += z
-
     """
     @author: QinFan@cqu.edu.cn
     """
-
     def reduct_graph(self, solved_prob):
         parameter_solved_lists = self.convert_variabl2array(solved_prob)
         return parameter_solved_lists
-
     """
     @param col_number 传入节点所在的列号
     @param X 返转后且重新编号后的调度表格 
     @author: QinFan@cqu.edu.cn
     """
-
     def get_time_step(self, col_number, X):
         for i in range(len(X[col_number])):
             if (X[col_number][i] == 1):
                 return i + 1
-
     """
     @author: QinFan@cqu.edu.cn
     """
-
     def get_node_type(self):
         pass
-
     """
     @author: QinFan@cqu.edu.cn
     """
-
     def get_son_node(self):
         pass
-
     """
     @author: QinFan@cqu.edu.cn
     """
-
     def get_first_one_raw_num(self, resolved_xyz, i):
         a = -1
         raw_num = len(resolved_xyz[0])
@@ -70,7 +54,6 @@ class Solver(solver_based.SolverBased):
                 a = j
                 break
         return a
-
     """
     @author: QinFan@cqu.edu.cn
     @param resolved_xyz 是已经求解出值了的大表格
@@ -79,14 +62,15 @@ class Solver(solver_based.SolverBased):
                   格式如：((x1, y1), (x2, y2), (x3, y3), ...)，
                   其中(x1, y1)表示有一条从x1出发指向y1的边
     """
-
     def pre_print_answer_table(self, resolved_xyz, time_steps, relies):
-
         resolved_xyz["X"] = self.two_dim_array_reverse_interface(resolved_xyz["X"])
         resolved_xyz["Y"] = self.two_dim_array_reverse_interface(resolved_xyz["Y"])
         resolved_xyz["Z"] = self.two_dim_array_reverse_interface(resolved_xyz["Z"])
-        self.print_answer_table(resolved_xyz['X'], time_steps, relies)
-
+        resolved_xyz_merged=resolved_xyz["X"]+resolved_xyz["Y"]+resolved_xyz["Z"]
+        self.print_answer_table(resolved_xyz_merged, time_steps, relies)
+    """
+    @author: QinFan@cqu.edu.cn
+    """
     def print_answer_table(self, resolved_xyz, time_steps, relies):
         # 保留原始的resolved_xyz
         old_resolved_xyz = []
@@ -110,7 +94,6 @@ class Solver(solver_based.SolverBased):
             for j in range(len(resolved_xyz[0])):
                 if resolved_xyz[i][j] == 1:
                     one_number_in_src_resolved_xyz += 1
-        print(one_number_in_src_resolved_xyz)
         node_original_node_number = [-1 for x in range(one_number_in_src_resolved_xyz)]
         # 节点类型
         node_type = []
@@ -143,7 +126,6 @@ class Solver(solver_based.SolverBased):
                     resolved_xyz[j][i] = 0
                     # 剥离后放到表格最后一列去
                     node_cnt += 1  # 节点数加一，因为加入了新的节点
-                    #print(node_cnt)
                     node_type[node_cnt-1] = 1  # 为新插入的路由算子，将类型记录为1
                     # 给出i，j返回新的一个节点的编号
                     new_node_number_record[j][i] = node_cnt
@@ -154,9 +136,6 @@ class Solver(solver_based.SolverBased):
         # 处理节点的时间步
         scheduled_time_steps = [-1 for x in range(len(resolved_xyz[0]))]  # 先全部初始化为-1
         for i in range(len(resolved_xyz[0])):  # 列
-            print(i)
-            print("aaaaaaaaaaaa")
-            print(len(resolved_xyz[0]))
             a = self.get_first_one_raw_num(resolved_xyz, i)
             scheduled_time_steps[i] = a
         # 子节点
@@ -196,6 +175,5 @@ class Solver(solver_based.SolverBased):
         # 打印出table查看
         for i in range(len(result_table)):
             for j in range(len(result_table[i])):
-                print("i=",i," j=",j)
                 print(result_table[i][j], end=' ')
             print()
