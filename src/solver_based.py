@@ -171,8 +171,8 @@ class SolverBased:
         )
         self.model.solve()
 
-        #print(pulp.LpStatus[self.model.status])
-        #print(self.convert_variabl2array(self.model))
+        print(pulp.LpStatus[self.model.status])
+        print(self.convert_variabl2array(self.model))
         self.pre_print_answer_table(
             self.convert_variabl2array(self.model),
             self.graph.generate_all_points_description(),

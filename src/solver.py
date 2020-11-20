@@ -16,7 +16,7 @@ class Solver(solver_based.SolverBased):
         z = 0
         for i in range(self.N):
             for j in range(self.T):
-                z += - parameter_lists["X"][i][j] + parameter_lists["Y"][i][j] + parameter_lists["Z"][i][j]
+                z += -parameter_lists["X"][i][j] + parameter_lists["Y"][i][j] + parameter_lists["Z"][i][j]
         model += z
     """
     @author: QinFan@cqu.edu.cn
@@ -67,7 +67,13 @@ class Solver(solver_based.SolverBased):
         resolved_xyz["Y"] = self.two_dim_array_reverse_interface(resolved_xyz["Y"])
         resolved_xyz["Z"] = self.two_dim_array_reverse_interface(resolved_xyz["Z"])
         resolved_xyz_merged=resolved_xyz["X"]+resolved_xyz["Y"]+resolved_xyz["Z"]
-        self.print_answer_table(resolved_xyz_merged, time_steps, relies)
+        relies_list=[]
+        for i in range(len(relies)):
+            bridge=[]
+            for j in range(len(relies[0])):
+                bridge.append(relies[i][j])
+            relies_list.append(bridge)
+        self.print_answer_table(resolved_xyz_merged, time_steps, relies_list)
     """
     @author: QinFan@cqu.edu.cn
     """
@@ -80,7 +86,7 @@ class Solver(solver_based.SolverBased):
                 bridge.append(resolved_xyz[i][j])
             old_resolved_xyz.append(bridge)
         # 定义额外的参数
-        node_cnt = 0  # 原始图中算子的数量
+        node_cnt = len(resolved_xyz[0])  # 原始图中算子的数量
         old_node_cnt = node_cnt
         # 获取变化前列数
         col_num = len(resolved_xyz[0])
@@ -94,6 +100,7 @@ class Solver(solver_based.SolverBased):
             for j in range(len(resolved_xyz[0])):
                 if resolved_xyz[i][j] == 1:
                     one_number_in_src_resolved_xyz += 1
+        #print(one_number_in_src_resolved_xyz," lalalalalla")
         node_original_node_number = [-1 for x in range(one_number_in_src_resolved_xyz)]
         # 节点类型
         node_type = []
@@ -118,9 +125,9 @@ class Solver(solver_based.SolverBased):
             # 处理插入的路由节点
             for j in range(raw_num):
                 if j == self.get_first_one_raw_num(old_resolved_xyz, i):
-                    new_node_number_record[j][i] = i  # 将列号作为节点的新的编号
+                    new_node_number_record[j][i] = i+1  # 将列号作为节点的新的编号
                     node_type[i] = 0  # 为之前的路由算子，将类型记录为0
-                    node_original_node_number[i] = i
+                    node_original_node_number[i] = i+1
                 if resolved_xyz[j][i] == 1 and j != self.get_first_one_raw_num(old_resolved_xyz, i):
                     # 将其剥离，以将表格形成one-hot形式
                     resolved_xyz[j][i] = 0
@@ -129,7 +136,7 @@ class Solver(solver_based.SolverBased):
                     node_type[node_cnt-1] = 1  # 为新插入的路由算子，将类型记录为1
                     # 给出i，j返回新的一个节点的编号
                     new_node_number_record[j][i] = node_cnt
-                    node_original_node_number[node_cnt-1] = i
+                    node_original_node_number[node_cnt-1] = i+1   #比如10号结点的下标为9
                     for ii in range(raw_num):
                         resolved_xyz[ii].append(1 if ii == j else 0)
 
@@ -139,12 +146,14 @@ class Solver(solver_based.SolverBased):
             a = self.get_first_one_raw_num(resolved_xyz, i)
             scheduled_time_steps[i] = a
         # 子节点
-        for i in range(len(resolved_xyz[0])):  # 列
-            for j in range(len(resolved_xyz)-1):
-                if resolved_xyz[j][i] == 1 and resolved_xyz[j + 1][i] == 1:
+        for i in range(len(old_resolved_xyz[0])):  # 列
+            for j in range(len(old_resolved_xyz)-1):
+                if old_resolved_xyz[j][i] == 1 and old_resolved_xyz[j + 1][i] == 1:
+                    #print("something")
                     rely = []
                     rely.append(new_node_number_record[j][i])
                     rely.append(new_node_number_record[j + 1][i])
+                    #print(rely,"rely")
                     relies.append(rely)  # 添加加入新的路由算子后的新的依赖
         # 开始输出table
         result_table = []
@@ -157,23 +166,34 @@ class Solver(solver_based.SolverBased):
             # 节点的时间步
             result_table[i].append(scheduled_time_steps[i])
             # 子节点1,2,3,4
+            son_node_cnt=0
             for ii in range(len(relies)):
-                son_node_cnt = 0
                 if (relies[ii][0] == i + 1):
                     son_node_cnt += 1
                     result_table[i].append(relies[ii][1])
-            for _ in range(4 - son_node_cnt):
-                result_table[i].append(0)
+            #print("son_node_cnt= ",son_node_cnt)
+            if son_node_cnt>4:
+                print("子节点数大于4，错误")
+                exit(0)
+            if son_node_cnt<4:
+                for _ in range(4 - son_node_cnt):
+                    result_table[i].append(0)
             # 节点类型
             if (i > old_node_cnt - 1):  # 新节点
                 result_table[i].append(1)
             else:
                 result_table[i].append(0)
             # 节点原节点编号：路由节点传递的原始节点的编号
+            #print(i)
+            #print(node_original_node_number[i])
             result_table[i].append(node_original_node_number[i])
-
+        #节点编号 时间步 子节点1 子节点2 子节点3 子节点4 节点类型 源节点编号
         # 打印出table查看
         for i in range(len(result_table)):
+            if(len(result_table[i])!=8):
+                print("存在某一行长度不为8")
+                exit(0)
+            #print("第",i+1,"行的长度：",len(result_table[i]))
             for j in range(len(result_table[i])):
                 print(result_table[i][j], end=' ')
             print()
