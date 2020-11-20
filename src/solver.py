@@ -64,10 +64,11 @@ class Solver(solver_based.SolverBased):
 
     def get_first_one_raw_num(self, resolved_xyz, i):
         a = -1
-        col_num = len(resolved_xyz[0])
-        for j in range(col_num):
-            if (resolved_xyz[i][j] == 1):
+        raw_num = len(resolved_xyz[0])
+        for j in range(raw_num):
+            if (resolved_xyz[j][i] == 1):
                 a = j
+                break
         return a
 
     """
@@ -102,19 +103,20 @@ class Solver(solver_based.SolverBased):
         # 获取行数
         raw_num = len(resolved_xyz)
         # 给出i，j返回新的一个节点的编号
-        new_node_number_record = [[-1 for i in range(raw_num)] for j in range(col_num)]
-        # 节点类型
-        node_type = []
-        #for i in range(len(resolved_xyz[0])):
-        for i in range(10000):
-            node_type.append(-1)
+        new_node_number_record = [[-1 for i in range(col_num)] for j in range(raw_num)]
         # 统计resolved_xyz中1的个数
         one_number_in_src_resolved_xyz = 0
         for i in range(len(resolved_xyz)):
             for j in range(len(resolved_xyz[0])):
                 if resolved_xyz[i][j] == 1:
                     one_number_in_src_resolved_xyz += 1
+        print(one_number_in_src_resolved_xyz)
         node_original_node_number = [-1 for x in range(one_number_in_src_resolved_xyz)]
+        # 节点类型
+        node_type = []
+        # for i in range(len(resolved_xyz[0])):
+        for i in range(one_number_in_src_resolved_xyz):
+            node_type.append(-1)
         # 遍历每一列的每一个1
         for i in range(col_num):
             # 处理插入路由节点后依赖的改变
@@ -141,7 +143,7 @@ class Solver(solver_based.SolverBased):
                     resolved_xyz[j][i] = 0
                     # 剥离后放到表格最后一列去
                     node_cnt += 1  # 节点数加一，因为加入了新的节点
-                    print(node_cnt)
+                    #print(node_cnt)
                     node_type[node_cnt-1] = 1  # 为新插入的路由算子，将类型记录为1
                     # 给出i，j返回新的一个节点的编号
                     new_node_number_record[j][i] = node_cnt
@@ -150,13 +152,16 @@ class Solver(solver_based.SolverBased):
                         resolved_xyz[ii].append(1 if ii == j else 0)
 
         # 处理节点的时间步
-        scheduled_time_steps = [-1 for x in range(resolved_xyz[0])]  # 先全部初始化为-1
+        scheduled_time_steps = [-1 for x in range(len(resolved_xyz[0]))]  # 先全部初始化为-1
         for i in range(len(resolved_xyz[0])):  # 列
-            a = self.get_first_one_raw_num(old_resolved_xyz, i)
+            print(i)
+            print("aaaaaaaaaaaa")
+            print(len(resolved_xyz[0]))
+            a = self.get_first_one_raw_num(resolved_xyz, i)
             scheduled_time_steps[i] = a
         # 子节点
         for i in range(len(resolved_xyz[0])):  # 列
-            for j in range(len(resolved_xyz)):
+            for j in range(len(resolved_xyz)-1):
                 if resolved_xyz[j][i] == 1 and resolved_xyz[j + 1][i] == 1:
                     rely = []
                     rely.append(new_node_number_record[j][i])
@@ -190,6 +195,7 @@ class Solver(solver_based.SolverBased):
 
         # 打印出table查看
         for i in range(len(result_table)):
-            for j in range(len(result_table[0])):
+            for j in range(len(result_table[i])):
+                print("i=",i," j=",j)
                 print(result_table[i][j], end=' ')
             print()
