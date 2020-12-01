@@ -44,7 +44,18 @@ class Solver(solver_based.SolverBased):
         for ii in range(len(routing_points)):
             if routing_points[ii][0] == node_id:
                 return routing_points[ii][1], routing_points[ii][2], routing_points[ii][3]
-        return None, None, None
+        for ii in range(len(static_points)):
+            if static_points[ii][0] == node_id:
+                return static_points[ii][1], static_points[ii][1], static_points[ii][1]
+
+    def is_routing_point(self, node_id, routing_points, static_points):
+        for ii in range(len(routing_points)):
+            if routing_points[ii][0] == node_id:
+                return 1
+        for ii in range(len(static_points)):
+            if static_points[ii][0] == node_id:
+                return 0
+        return 0
 
     def generate_constraints(self, N, T, relies, parameter_lists, routing_points, static_points, model):
         """
@@ -64,23 +75,26 @@ class Solver(solver_based.SolverBased):
         print(routing_points)
         # 唯一性，仅可在表中选一列
         for n in range(N):  # 选择节点 节点编号为ii+1
-            earliest_time_step, lastest_time_step, lastest_routing_time_step = \
-                self.get_earliest_time_step_lastest_time_step_lastest_routing_time_step(n + 1, routing_points,
-                                                                                        static_points)
-            if earliest_time_step is None:  # 如果当前点不是路由点，那么就跳过
-                continue
-            xnii = 0
-            for jj in range(earliest_time_step, lastest_routing_time_step + 1):
-                xnii += X[n][jj][jj]
-            model += xnii <= 1
+            if self.is_routing_point(n,routing_points, static_points)==1:
+
+                earliest_time_step, lastest_time_step, lastest_routing_time_step = \
+                    self.get_earliest_time_step_lastest_time_step_lastest_routing_time_step(n + 1, routing_points,
+                                                                                            static_points)
+                if earliest_time_step is None:  # 如果当前点不是路由点，那么就跳过
+                    continue
+                xnii = 0
+                for jj in range(earliest_time_step, lastest_routing_time_step + 1):
+                    xnii += X[n][jj][jj]
+                model += xnii <= 1
 
         # 排他性
         for n in range(N):  # 选择节点 节点编号为ii+1
-            for kk in range(T):
-                for pp in range(T):
-                    if kk != pp:
-                        for jj in range(T):
-                            model += X[n][kk][kk] + X[n][pp][jj] <= 1
+            if self.is_routing_point(n, routing_points, static_points) == 1:
+                for kk in range(T):
+                    for pp in range(T):
+                        if kk != pp:
+                            for jj in range(T):
+                                model += X[n][kk][kk] + X[n][pp][jj] <= 1
 
         # 依赖约束——1
         for rely_idx in range(len(relies)):
@@ -95,7 +109,7 @@ class Solver(solver_based.SolverBased):
                 i1_sum = 0
                 for j1 in range(T):
                     i1_sum += i1 * X[father - 1][i1][j1]
-                model += i1_sum < i2_sum
+                model += i1_sum -i2_sum + 1 <= 0
 
         # 依赖约束——2
         for rely_idx in range(len(relies)):
@@ -110,6 +124,6 @@ class Solver(solver_based.SolverBased):
                 i1_sum = 0
                 for j1 in range(T):
                     i1_sum += j1 * X[father - 1][i1][j1]
-                model += i1_sum < i2_sum
+                model += i1_sum -i2_sum +1 <= 0
 
         # PE资源约束
