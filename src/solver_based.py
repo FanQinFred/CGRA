@@ -123,6 +123,7 @@ class SolverBased:
             if variable.name != "__dummy":
                 _, node_id, st_turn, cur_turn = variable.name.split(",")
                 node_id, st_turn, cur_turn = int(node_id), int(st_turn), int(cur_turn)
+
                 res_list[node_id][st_turn][cur_turn] = math.floor(variable.varValue + 0.5)
         return res_list
 
@@ -132,8 +133,13 @@ class SolverBased:
         @author: wangsaiyu@cqu.edu.cn
         """
         param_list = self.generate_param_table()  # 获取模型中每个点的值
+        for index, i in enumerate(param_list):
+            print("key::", index + 1)
+            print(i)
+            print("\n\n\n\n\n\n")
         # 统计每个时间点，每个点之间的依赖关系，对点之间的依赖关系进行统计后，重新编号，并且输出
-        rename_node_counter = self.N
+        rename_node_counter = self.N + 1
+        is_printed = {}
         for try_time in range(self.T - 1):
             for try_node_from in range(self.N):
                 node_from_rely_nodes = []
@@ -145,17 +151,22 @@ class SolverBased:
                                 continue
                             # 本步中有点，那么就探查to_node在本步中是否是起点
                             if param_list[try_node_to][try_time + 1][try_time + 1]:  # 如果本步是依赖点的起点，那么就添加边
+                                print("try rely :: ", try_node_from + 1, try_node_to + 1)
                                 node_from_rely_nodes.append(try_node_to + 1)
+                is_pass = (len(node_from_rely_nodes) == 0) and (not self.graph.is_origin_node(try_node_from + 1)) and (try_node_from in is_printed.keys())
+
                 # 当前点的所有到达点试探完毕，进行输出
-                if len(node_from_rely_nodes) == 0 and not self.graph.is_origin_node(try_node_from + 1):
+                if (len(node_from_rely_nodes) == 0) or ((not self.graph.is_origin_node(try_node_from + 1)) and (try_node_from in is_printed.keys())):
                     # 如果没有被依赖，或者在本回合没有给其他点传递，那么就跳过
                     continue
+                is_printed[try_node_from] = 1
                 print("node id {} (node type is {}, origin node id is {}), time step {}, nex node list :: ".format(
                     rename_node_counter, self.graph.get_node_type(try_node_from + 1), try_node_from + 1, try_time
                 ))
                 rename_node_counter += 1
                 for to_node in node_from_rely_nodes:
                     print(to_node, end=", ")
+                print("")
 
     def run(self, file_name):
         self.read_file(file_name)

@@ -96,6 +96,14 @@ class Solver(solver_based.SolverBased):
                         if kk != pp:
                             for jj in range(T):
                                 model += X[n][kk][kk] + X[n][pp][jj] <= 1
+        for static_point in static_points:
+            for i in range(T):
+                for j in range(T):
+                    if i == j and i == static_point[0]:
+                        model += (X[static_point[0]][i][j] == 1)
+                    else:
+                        model += (X[static_point[0]][i][j] == 0)
+
 
         # 依赖约束——1
         for rely_idx in range(len(relies)):
