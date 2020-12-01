@@ -90,6 +90,30 @@ class Graph:
             res.append((i, node.earliest_time_step, node.latest_time_step, node.latest_routing_time_step))
         return res
 
+    def have_edge(self, _from, _to):
+        """
+        给出一个起点和终点，判断在图中是否有相应的边，返回一个布尔值，表示是否有相应的边
+        """
+        for try_edge in self.edges:
+            if try_edge.from_point_id == _from and try_edge.to_point_id == _to:
+                return True
+        return False
+
+    def is_origin_node(self, _id):
+        """
+        给出一个点的编号，判断点是否是某条边的起点
+        """
+        for try_edge in self.edges:
+            if try_edge.from_point_id == _id:
+                return True
+        return False
+
+    def get_node_type(self, _id):
+        """
+        给出一个点的编号，返回他的节点类型
+        """
+        return self.nodes[_id].is_changeable
+
     def __str__(self):
         return_string = ""
         for node in self.nodes:

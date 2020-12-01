@@ -10,29 +10,32 @@ class SolverBased:
     T = 0
     model = pulp.LpProblem()
 
+    def add_aim_function(self, N, parameter_lists, model):
+        """
+        需要被重载的函数，向模型中添加目标函数
+        @param N 一共有N个点
+        @param parameter_lists: 参数列表，一个三维数组，表示xnij (self.N * self.T * self.T)
+        @param model 表示传进来的PuLP模型，添加的约束直接在模型上进行添加即可
+        """
+        pass
+
+    def generate_constraints(self, N, T, relies, parameter_lists, routing_points, static_points, model):
+        """
+        需要被重写的函数，用于向模型中添加约束
+        @author: wangsaiyu@cqu.edu.cn
+        @param N: 一共有N个点
+        @param T: 一共有T个回合
+        @param relies: 依赖集合，格式如：((x1, y1), (x2, y2), (x3, y3), ...)， 其中(x1, y1)表示有一条从x1出发指向y1的边
+        @param parameter_lists: 参数列表，一个字典，{"X":[[], [], ...], "Y":[[], [], ...], "Z":[[], [], ...], }， 每个键值对代表一个表， 表中的每一个元素
+                                是一个PuLP的约束变量，添加到模型中的约束应由变量和运算构成
+        @param routing_points: ((node_id, earliest_time_step, lastest_time_step, lastest_routing_time_step),  ... )其中node_id表示点的数量
+        @param static_points: ((node_id, earliest_time_step),  ... )其中node_id表示点的数量
+        @param model: 表示传进来的PuLP模型，添加的约束直接在模型上进行添加即可
+        """
+        pass
+
     def __init__(self):
         graph = Graph()
-
-    def convert_variabl2array(self, solved_prob):
-        """
-        根据给出的解，生成x数据表 xnij 表示 n号点 i，j
-        @param solved_prob: 运行后的解
-        @return: 返回一个数组，三维数组表示变量表格
-        """
-        res_x_variable_array = [[0 for i in range(self.T)] for j in range(self.N)]
-
-        # 定义不同的ref应当写入那个数组
-        write_goal = {
-            "x": res_x_variable_array,
-        }
-
-        for variable in solved_prob.variables():
-            if variable.name != "__dummy":
-                ref, node_id, turn_id = variable.name.split(",")
-                node_id, turn_id = int(node_id), int(turn_id)
-                write_goal[ref][node_id][turn_id] = math.floor(variable.varValue + 0.5)
-
-        return res_x_variable_array
 
     def read_file(self, file_name):
         """
@@ -97,87 +100,65 @@ class SolverBased:
         @author: wangsaiyu@cqu.edu.cn
         """
         self.model = pulp.LpProblem("prob", pulp.LpMinimize)  # 新建问题
-        self.x_variable_array, self.y_variable_array, self.z_variable_array = [], [], []
+        self.x_variable_array = []
         for point in range(self.N):
             new_x_array = []
             for turn in range(self.T):
                 new_x_line = []
                 for sub_turn in range(self.T):
                     extend_name = "," + str(point) + "," + str(turn) + "," + str(sub_turn)
-                    new_x_line.append(pulp.LpVariable("x" + extend_name, lowBound=0, upBound=21, cat=pulp.LpInteger))
+                    new_x_line.append(pulp.LpVariable("x" + extend_name, lowBound=0, upBound=1, cat=pulp.LpInteger))
                 new_x_array.append(new_x_line)
             self.x_variable_array.append(new_x_array)
 
-    def add_aim_function(self, N, parameter_lists, model):
+    def generate_param_table(self):
         """
-        需要被重载的函数，向模型中添加目标函数
-        @param N 一共有N个点
-        @param parameter_lists: 参数列表，一个三维数组，表示xnij (self.N * self.T * self.T)
-        @param model 表示传进来的PuLP模型，添加的约束直接在模型上进行添加即可
+        根据模型生成参数列表
+        生成参数列表
         """
-        pass
+        res_list = [[[0 for i in range(self.T)] for k in range(self.T)] for j in range(self.N)]
+        for variable in self.model.variables():
+            if variable.name != "__dummy":
+                _, node_id, st_turn, cur_turn = variable.name.split(",")
+                node_id, st_turn, cur_turn = int(node_id), int(st_turn), int(cur_turn)
+                res_list[node_id][st_turn][cur_turn] = math.floor(variable.varValue + 0.5)
+        return res_list
 
-    def generate_constraints(self, N, T, relies, parameter_lists, routing_points, static_points, model):
+    def show_answer(self):
         """
-        需要被重写的函数，用于向模型中添加约束
+        用于模型求解后展示答案，直接与自身的模型进行交互即可
         @author: wangsaiyu@cqu.edu.cn
-        @param N: 一共有N个点
-        @param T: 一共有T个回合
-        @param relies: 依赖集合，格式如：((x1, y1), (x2, y2), (x3, y3), ...)， 其中(x1, y1)表示有一条从x1出发指向y1的边
-        @param parameter_lists: 参数列表，一个字典，{"X":[[], [], ...], "Y":[[], [], ...], "Z":[[], [], ...], }， 每个键值对代表一个表， 表中的每一个元素
-                                是一个PuLP的约束变量，添加到模型中的约束应由变量和运算构成
-        @param routing_points: ((node_id, earliest_time_step, lastest_time_step, lastest_routing_time_step),  ... )其中node_id表示点的数量
-        @param static_points: ((node_id, earliest_time_step),  ... )其中node_id表示点的数量
-        @param model: 表示传进来的PuLP模型，添加的约束直接在模型上进行添加即可
         """
-        pass
+        param_list = self.generate_param_table()  # 获取模型中每个点的值
+        # 统计每个时间点，每个点之间的依赖关系，对点之间的依赖关系进行统计后，重新编号，并且输出
+        rename_node_counter = self.N
+        for try_time in range(self.T - 1):
+            for try_node_from in range(self.N):
+                node_from_rely_nodes = []
+                for try_node_to in range(self.N):  # 遍历有依赖关系的点
+                    if self.graph.have_edge(try_node_from + 1, try_node_to + 1):  # 如果有从to到from的依赖
+                        for try_from_node_begin_time in range(try_time + 1):  # 如果在本步中有点，那么就继续探查
+                            if param_list[try_node_from][try_from_node_begin_time][try_time] == 0:
+                                # 本步中没有点，那么就直接跳过本步，继续探测
+                                continue
+                            # 本步中有点，那么就探查to_node在本步中是否是起点
+                            if param_list[try_node_to][try_time + 1][try_time + 1]:  # 如果本步是依赖点的起点，那么就添加边
+                                node_from_rely_nodes.append(try_node_to + 1)
+                # 当前点的所有到达点试探完毕，进行输出
+                if len(node_from_rely_nodes) == 0 and not self.graph.is_origin_node(try_node_from + 1):
+                    # 如果没有被依赖，或者在本回合没有给其他点传递，那么就跳过
+                    continue
+                print("node id {} (node type is {}, origin node id is {}), time step {}, nex node list :: ".format(
+                    rename_node_counter, self.graph.get_node_type(try_node_from + 1), try_node_from + 1, try_time
+                ))
+                rename_node_counter += 1
+                for to_node in node_from_rely_nodes:
+                    print(to_node, end=", ")
 
-    def show_answer(self, resolved_xyz, time_steps, relies):
-        """
-        需要被重写的函数
-        @author: wangsaiyu@cqu.edu.cn
-        @param resolved_xyz 是已经求解出值了的大表格
-        @param time_steps 每个节点的最早时间步，最晚时间步，最晚路由时间步
-        @param relies 节点间的依赖关系,
-                     格式如：((x1, y1), (x2, y2), (x3, y3), ...)，
-                     其中(x1, y1)表示有一条从x1出发指向y1的边
-        """
-        print("ERROR :: NO DUO TAI")
-        pass
-
-    def two_dim_array_reverse_interface(self, array):
-
-        new_array = [[0 for i in range(len(array))] for j in range(len(array[0]))]
-        for i in range(len(new_array)):
-            for j in range(len(new_array[0])):
-                new_array[i][j] = array[j][i]
-
-        return new_array
-
-    def run(self, file_name, II=None):
+    def run(self, file_name):
         self.read_file(file_name)
         self.get_maneuver_nodes_range()
         self.init_model()
-        generate_constraints(
-            self.N, self.T,  # N, T
-            self.graph.generate_relies(),  # relies
-            {"X": self.x_variable_array, "Y": self.y_variable_array, "Z": self.z_variable_array},  # param_lists
-            self.graph.generate_routing_points_description(),
-            self.graph.generate_static_points_description(),
-            self.model,  # model
-        )
-        self.add_aim_function(
-            self.N, {"X": self.x_variable_array, "Y": self.y_variable_array, "Z": self.z_variable_array}, self.model,
-        )
-        self.model.solve()
-
-        print(pulp.LpStatus[self.model.status])
-        print(self.convert_variabl2array(self.model))
-        self.pre_print_answer_table(
-            self.convert_variabl2array(self.model),
-            self.graph.generate_all_points_description(),
-            self.graph.generate_relies()
-        )
 
 
 if __name__ == "__main__":
