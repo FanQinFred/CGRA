@@ -10,11 +10,13 @@ class SolverBased:
     T = 0
     model = pulp.LpProblem()
 
-    def add_aim_function(self, N, parameter_lists, model):
+    def add_aim_function(self, N, parameter_lists, routing_points, static_points, model):
         """
         需要被重载的函数，向模型中添加目标函数
         @param N 一共有N个点
         @param parameter_lists: 参数列表，一个三维数组，表示xnij (self.N * self.T * self.T)
+        @param routing_points: ((node_id, earliest_time_step, lastest_time_step, lastest_routing_time_step),  ... )其中node_id表示点的数量
+        @param static_points: ((node_id, earliest_time_step),  ... )其中node_id表示点的数量
         @param model 表示传进来的PuLP模型，添加的约束直接在模型上进行添加即可
         """
         pass
@@ -159,6 +161,22 @@ class SolverBased:
         self.read_file(file_name)
         self.get_maneuver_nodes_range()
         self.init_model()
+        self.generate_constraints(
+            self.N, self.T,  # N, T
+            self.graph.generate_relies(),  # relies
+            self.x_variable_array,
+            self.graph.generate_routing_points_description(),
+            self.graph.generate_static_points_description(),
+            self.model,  # model
+        )
+        self.add_aim_function(
+            self.N, self.x_variable_array,
+            self.graph.generate_routing_points_description(),
+            self.graph.generate_static_points_description(),
+            self.model,
+        )
+        self.model.solve()
+        self.show_answer()
 
 
 if __name__ == "__main__":
