@@ -73,6 +73,7 @@ class Solver(solver_based.SolverBased):
 
         X = parameter_lists
         print(routing_points)
+        
         # 唯一性，仅可在表中选一列
         for n in range(N):  # 选择节点 节点编号为ii+1
             if self.is_routing_point(n,routing_points, static_points)==1:
