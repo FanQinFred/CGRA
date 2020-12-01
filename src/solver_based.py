@@ -1,5 +1,4 @@
 from src.graph import Graph
-from src.generate_constraints import generate_constraints
 import pulp
 import math
 
@@ -7,8 +6,6 @@ import math
 class SolverBased:
     graph = Graph()
     x_variable_array = []
-    y_variable_array = []
-    z_variable_array = []
     N = 0
     T = 0
     model = pulp.LpProblem()
@@ -18,19 +15,15 @@ class SolverBased:
 
     def convert_variabl2array(self, solved_prob):
         """
-        根据给出的解，生成x，y，z数据表
+        根据给出的解，生成x数据表 xnij 表示 n号点 i，j
         @param solved_prob: 运行后的解
-        @return: 返回一个字典，其中可通过下标x_variable_array, y_variable_array, z_variable_array访问三个表格
+        @return: 返回一个数组，三维数组表示变量表格
         """
         res_x_variable_array = [[0 for i in range(self.T)] for j in range(self.N)]
-        res_y_variable_array = [[0 for i in range(self.T)] for j in range(self.N)]
-        res_z_variable_array = [[0 for i in range(self.T)] for j in range(self.N)]
 
         # 定义不同的ref应当写入那个数组
         write_goal = {
             "x": res_x_variable_array,
-            "y": res_y_variable_array,
-            "z": res_z_variable_array,
         }
 
         for variable in solved_prob.variables():
@@ -39,11 +32,7 @@ class SolverBased:
                 node_id, turn_id = int(node_id), int(turn_id)
                 write_goal[ref][node_id][turn_id] = math.floor(variable.varValue + 0.5)
 
-        return {
-            "X": res_x_variable_array,
-            "Y": res_y_variable_array,
-            "Z": res_z_variable_array,
-        }
+        return res_x_variable_array
 
     def read_file(self, file_name):
         """
@@ -105,34 +94,45 @@ class SolverBased:
         """
         创建一个基础模型，并且创建基础参数列表， 参数列表为：
         x_variable_array: 表示PE节点
-        y_variable_array: 表示向内存存储
-        z_variable_array: 表示向内存读取
         @author: wangsaiyu@cqu.edu.cn
         """
         self.model = pulp.LpProblem("prob", pulp.LpMinimize)  # 新建问题
         self.x_variable_array, self.y_variable_array, self.z_variable_array = [], [], []
         for point in range(self.N):
-            new_x_line, new_y_line, new_z_line = [], [], []
+            new_x_array = []
             for turn in range(self.T):
-                extend_name = "," + str(point) + "," + str(turn)
-                new_x_line.append(pulp.LpVariable("x" + extend_name, lowBound=0, upBound=21, cat=pulp.LpInteger))
-                new_y_line.append(pulp.LpVariable("y" + extend_name, lowBound=0, upBound=21, cat=pulp.LpInteger))
-                new_z_line.append(pulp.LpVariable("z" + extend_name, lowBound=0, upBound=21, cat=pulp.LpInteger))
-            self.x_variable_array.append(new_x_line)
-            self.y_variable_array.append(new_y_line)
-            self.z_variable_array.append(new_z_line)
+                new_x_line = []
+                for sub_turn in range(self.T):
+                    extend_name = "," + str(point) + "," + str(turn) + "," + str(sub_turn)
+                    new_x_line.append(pulp.LpVariable("x" + extend_name, lowBound=0, upBound=21, cat=pulp.LpInteger))
+                new_x_array.append(new_x_line)
+            self.x_variable_array.append(new_x_array)
 
     def add_aim_function(self, N, parameter_lists, model):
         """
-            需要被重载的函数，向模型中添加目标函数
-            @param N 一共有N个点
-            @param parameter_lists: 参数列表，一个字典，{"X":[[], [], ...], "Y":[[], [], ...], "Z":[[], [], ...], }， 每个键值对代表一个表， 表中的每一个元素
-                                   是一个PuLP的约束变量，添加到模型中的约束应由变量和运算构成
-            @param model 表示传进来的PuLP模型，添加的约束直接在模型上进行添加即可
+        需要被重载的函数，向模型中添加目标函数
+        @param N 一共有N个点
+        @param parameter_lists: 参数列表，一个三维数组，表示xnij (self.N * self.T * self.T)
+        @param model 表示传进来的PuLP模型，添加的约束直接在模型上进行添加即可
         """
         pass
 
-    def pre_print_answer_table(self, resolved_xyz, time_steps, relies):
+    def generate_constraints(self, N, T, relies, parameter_lists, routing_points, static_points, model):
+        """
+        需要被重写的函数，用于向模型中添加约束
+        @author: wangsaiyu@cqu.edu.cn
+        @param N: 一共有N个点
+        @param T: 一共有T个回合
+        @param relies: 依赖集合，格式如：((x1, y1), (x2, y2), (x3, y3), ...)， 其中(x1, y1)表示有一条从x1出发指向y1的边
+        @param parameter_lists: 参数列表，一个字典，{"X":[[], [], ...], "Y":[[], [], ...], "Z":[[], [], ...], }， 每个键值对代表一个表， 表中的每一个元素
+                                是一个PuLP的约束变量，添加到模型中的约束应由变量和运算构成
+        @param routing_points: ((node_id, earliest_time_step, lastest_time_step, lastest_routing_time_step),  ... )其中node_id表示点的数量
+        @param static_points: ((node_id, earliest_time_step),  ... )其中node_id表示点的数量
+        @param model: 表示传进来的PuLP模型，添加的约束直接在模型上进行添加即可
+        """
+        pass
+
+    def show_answer(self, resolved_xyz, time_steps, relies):
         """
         需要被重写的函数
         @author: wangsaiyu@cqu.edu.cn
