@@ -6,11 +6,12 @@ import math
 class SolverBased:
     graph = Graph()
     x_variable_array = []
+    npe = None
     N = 0
     T = 0
     model = pulp.LpProblem()
 
-    def add_aim_function(self, N, parameter_lists, routing_points, static_points, model):
+    def add_aim_function(self, N, parameter_lists, routing_points, static_points, npe, model):
         """
         需要被重载的函数，向模型中添加目标函数
         @param N 一共有N个点
@@ -21,7 +22,7 @@ class SolverBased:
         """
         pass
 
-    def generate_constraints(self, N, T, relies, parameter_lists, routing_points, static_points, model):
+    def generate_constraints(self, N, T, relies, parameter_lists, routing_points, static_points, npe, model):
         """
         需要被重写的函数，用于向模型中添加约束
         @author: wangsaiyu@cqu.edu.cn
@@ -112,6 +113,7 @@ class SolverBased:
                     new_x_line.append(pulp.LpVariable("x" + extend_name, lowBound=0, upBound=1, cat=pulp.LpInteger))
                 new_x_array.append(new_x_line)
             self.x_variable_array.append(new_x_array)
+        self.npe = pulp.LpVariable("npe", lowBound=0, upBound=1, cat=pulp.LpInteger)
 
     def generate_param_table(self):
         """
@@ -178,12 +180,14 @@ class SolverBased:
             self.x_variable_array,
             self.graph.generate_routing_points_description(),
             self.graph.generate_static_points_description(),
+            self.npe,
             self.model,  # model
         )
         self.add_aim_function(
             self.N, self.x_variable_array,
             self.graph.generate_routing_points_description(),
             self.graph.generate_static_points_description(),
+            self.npe,
             self.model,
         )
         self.model.solve()
