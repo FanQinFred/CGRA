@@ -113,7 +113,7 @@ class SolverBased:
                     new_x_line.append(pulp.LpVariable("x" + extend_name, lowBound=0, upBound=1, cat=pulp.LpInteger))
                 new_x_array.append(new_x_line)
             self.x_variable_array.append(new_x_array)
-        self.npe = pulp.LpVariable("npe", lowBound=0, upBound=1, cat=pulp.LpInteger)
+        self.npe = pulp.LpVariable("npe", lowBound=0, upBound=16, cat=pulp.LpInteger)
 
     def generate_param_table(self):
         """
@@ -122,7 +122,7 @@ class SolverBased:
         """
         res_list = [[[0 for i in range(self.T)] for k in range(self.T)] for j in range(self.N)]
         for variable in self.model.variables():
-            if variable.name != "__dummy":
+            if variable.name != "__dummy" and variable.name != "npe":
                 _, node_id, st_turn, cur_turn = variable.name.split(",")
                 node_id, st_turn, cur_turn = int(node_id), int(st_turn), int(cur_turn)
 
@@ -153,7 +153,6 @@ class SolverBased:
                                 continue
                             # 本步中有点，那么就探查to_node在本步中是否是起点
                             if param_list[try_node_to][try_time + 1][try_time + 1]:  # 如果本步是依赖点的起点，那么就添加边
-                                print("try rely :: ", try_node_from + 1, try_node_to + 1)
                                 node_from_rely_nodes.append(try_node_to + 1)
                 is_pass = (len(node_from_rely_nodes) == 0) and (not self.graph.is_origin_node(try_node_from + 1)) and (try_node_from in is_printed.keys())
 

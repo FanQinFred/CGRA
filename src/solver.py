@@ -80,7 +80,7 @@ class Solver(solver_based.SolverBased):
             sum_xnii = 0
             for i in range(earliest_time_step, lastest_routing_time_step + 1):
                 sum_xnii += X[n][i][i]
-            model += sum_xnii <= 1
+            model += (sum_xnii == 1)
 
         # 排他性
         # 对所有的算子，可调度算子个非可调度算子
@@ -95,9 +95,9 @@ class Solver(solver_based.SolverBased):
             for i in range(T):
                 for j in range(T):
                     if i == j and i == static_point[1]:
-                        model += (X[static_point[0]][i][j] == 1)
+                        model += (X[static_point[0] - 1][i][j] == 1)
                     else:
-                        model += (X[static_point[0]][i][j] == 0)
+                        model += (X[static_point[0] - 1][i][j] == 0)
 
         # 依赖约束——1
         """
@@ -115,14 +115,15 @@ class Solver(solver_based.SolverBased):
                     i1_sum += i1 * X[father - 1][i1][j1]
                 model += i1_sum -i2_sum + 1 <= 0
         """
+
         for rely_idx in range(len(relies)):
             n1 = relies[rely_idx][0]
             n2 = relies[rely_idx][1]
-            for i2 in range(T):
+            for i2 in range(1, T):
                 sum_n1_i1_i2s1 = 0
                 for i1 in range(T):
-                    sum_n1_i1_i2s1 += X[n1][i1][i2 - 1]
-                model += X[n2][i2][i2] - sum_n1_i1_i2s1 == 0
+                    sum_n1_i1_i2s1 += X[n1 - 1][i1][i2 - 1]
+                model += X[n2 - 1][i2][i2] - sum_n1_i1_i2s1 <= 0
 
         # 依赖约束——2
         """
@@ -141,8 +142,7 @@ class Solver(solver_based.SolverBased):
                 model += i1_sum - i2_sum + 1 <= 0
         """
         # PE资源约束
-        ii = 4
-        for j in range(T % ii):
+        for j in range(T):
             sum_ij = 0
             for n in range(N):
                 earliest_time_step, lastest_time_step, lastest_routing_time_step = self.get_earliest_time_step_lastest_time_step_lastest_routing_time_step(
