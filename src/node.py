@@ -15,7 +15,7 @@ class Node:
         @param earliest_time_step: 当前点的最早时间步
         @param latest_time_step: 当前点的最晚时间步
         """
-        self.is_changeable = True if is_changeable == 1 else False
+        self.is_changeable = True if is_changeable != 0 else False
         self.earliest_time_step = earliest_time_step
         self.latest_time_step = latest_time_step
 

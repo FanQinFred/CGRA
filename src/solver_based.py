@@ -55,8 +55,6 @@ class SolverBased:
                 for edge in range(4):
                     self.graph.add_edge(line_items[0], line_items[1 + edge * 2], line_items[2 + edge * 2])
 
-        print(self.graph)  # 测试当前图
-
     def get_latest_routing_time_step(self, node_id):
         """
         获取当前节点的最长路由时间步， 使用了深度优先搜索的方法， 每个点的最晚路由时间步为所有子节点的最晚路由时间步 - 1
@@ -94,8 +92,6 @@ class SolverBased:
             if cur_node.is_changeable:  # 如果当前点是机动点，那么就进行查找
                 self.get_latest_routing_time_step(node_id)
 
-        print(self.graph)
-
     def init_model(self):
         """
         创建一个基础模型，并且创建基础参数列表， 参数列表为：
@@ -129,16 +125,18 @@ class SolverBased:
                 res_list[node_id][st_turn][cur_turn] = math.floor(variable.varValue + 0.5)
         return res_list
 
-    def show_answer(self):
+    def show_answer(self, file_name=None):
         """
         用于模型求解后展示答案，直接与自身的模型进行交互即可
         @author: wangsaiyu@cqu.edu.cn
         """
+        _to_file = None
+        if file_name is not None:
+            _to_file = open(file_name, "w")
+            print("节点编号, 时间步, 子节点1, 子节点2, 子节点3, 子节点4, 节点类型, 原节点编号", file=_to_file)
+
         param_list = self.generate_param_table()  # 获取模型中每个点的值
-        for index, i in enumerate(param_list):
-            print("key::", index + 1)
-            print(i)
-            print("\n\n\n\n\n\n")
+
         # 统计每个时间点，每个点之间的依赖关系，对点之间的依赖关系进行统计后，重新编号，并且输出
         rename_node_counter = self.N + 1
         is_printed = {}
@@ -154,20 +152,32 @@ class SolverBased:
                             # 本步中有点，那么就探查to_node在本步中是否是起点
                             if param_list[try_node_to][try_time + 1][try_time + 1]:  # 如果本步是依赖点的起点，那么就添加边
                                 node_from_rely_nodes.append(try_node_to + 1)
-                is_pass = (len(node_from_rely_nodes) == 0) and (not self.graph.is_origin_node(try_node_from + 1)) and (try_node_from in is_printed.keys())
+                is_pass = (len(node_from_rely_nodes) == 0) and (not self.graph.is_origin_node(try_node_from + 1)) and (
+                            try_node_from in is_printed.keys())
 
                 # 当前点的所有到达点试探完毕，进行输出
-                if (len(node_from_rely_nodes) == 0) or ((not self.graph.is_origin_node(try_node_from + 1)) and (try_node_from in is_printed.keys())):
+                if (len(node_from_rely_nodes) == 0) or (
+                        (not self.graph.is_origin_node(try_node_from + 1)) and (try_node_from in is_printed.keys())):
                     # 如果没有被依赖，或者在本回合没有给其他点传递，那么就跳过
                     continue
                 is_printed[try_node_from] = 1
-                print("node id {} (node type is {}, origin node id is {}), time step {}, nex node list :: ".format(
-                    rename_node_counter, self.graph.get_node_type(try_node_from + 1), try_node_from + 1, try_time
-                ))
+                if file_name is None:
+                    print("node id {} (node type is {}, origin node id is {}), time step {}, nex node list :: ".format(
+                        rename_node_counter, self.graph.get_node_type(try_node_from + 1), try_node_from + 1, try_time
+                    ))
+                    for to_node in node_from_rely_nodes:
+                        print(to_node, end=", ")
+                    print("")
+                if file_name is not None:
+                    print("{}, {}, {}, {}, {}, {}, {}, {}".format(
+                        rename_node_counter, try_time,
+                        0 if len(node_from_rely_nodes) < 1 else node_from_rely_nodes[0],
+                        0 if len(node_from_rely_nodes) < 2 else node_from_rely_nodes[1],
+                        0 if len(node_from_rely_nodes) < 3 else node_from_rely_nodes[2],
+                        0 if len(node_from_rely_nodes) < 4 else node_from_rely_nodes[3],
+                        self.graph.get_node_type(try_node_from + 1), try_node_from + 1
+                    ), file=_to_file)
                 rename_node_counter += 1
-                for to_node in node_from_rely_nodes:
-                    print(to_node, end=", ")
-                print("")
 
     def run(self, file_name):
         self.read_file(file_name)
@@ -190,7 +200,7 @@ class SolverBased:
             self.model,
         )
         self.model.solve()
-        self.show_answer()
+        self.show_answer("../result/" + file_name.split("/")[-1]  + "_res.csv")
 
 
 if __name__ == "__main__":
