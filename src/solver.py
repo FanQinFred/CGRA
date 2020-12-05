@@ -40,9 +40,11 @@ class Solver(solver_based.SolverBased):
                                                                            static_points):
         for ii in range(len(routing_points)):
             if routing_points[ii][0] == node_id:
+                #print(routing_points[ii][1], routing_points[ii][2], routing_points[ii][3])
                 return routing_points[ii][1], routing_points[ii][2], routing_points[ii][3]
         for ii in range(len(static_points)):
             if static_points[ii][0] == node_id:
+                #print(static_points[ii][1], static_points[ii][1], static_points[ii][1])
                 return static_points[ii][1], static_points[ii][1], static_points[ii][1]
 
     def is_routing_point(self, node_id, routing_points, static_points):

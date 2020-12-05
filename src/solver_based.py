@@ -54,6 +54,7 @@ class SolverBased:
                 self.graph.add_node(line_items[0], line_items[11], line_items[9], line_items[10])
                 for edge in range(4):
                     self.graph.add_edge(line_items[0], line_items[1 + edge * 2], line_items[2 + edge * 2])
+        file_obj.close()
 
     def get_latest_routing_time_step(self, node_id):
         """
@@ -178,6 +179,7 @@ class SolverBased:
                         self.graph.get_node_type(try_node_from + 1), try_node_from + 1
                     ), file=_to_file)
                 rename_node_counter += 1
+        _to_file.close()
 
     def run(self, file_name):
         self.read_file(file_name)
